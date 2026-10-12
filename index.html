@@ -77,7 +77,7 @@ class Component  {
     if (/[?&]tgtest/.test(location.search)) window.__tg = this;
     this.peers = new Map(); this.gifts = []; this.liveInit();
     document.addEventListener('pointerleave', this.onLeave);
-    if (document.fonts) document.fonts.load(`700 100px ${this.F}`).then(() => { this.cache = {}; this.layout(); this.buildPoster(); }).catch(() => {});
+    if (document.fonts) document.fonts.load(`700 100px ${this.F}`).then(() => { this.cache = {}; this.shapeCache=new Map(); for(const l of this.letters)if(l.ch!==' ')this.gen(l); this.layout(); this.buildPoster(); }).catch(() => {});
     this.vmime = typeof MediaRecorder !== 'undefined' ? ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) : null;
     this.buildPoster();
     const loop = () => { this.raf = requestAnimationFrame(loop); this.frame(); };
@@ -602,39 +602,54 @@ class Component  {
     }
     return P;
   }
-  gen(l) {
-    const r = this.rng((l.ws ^ Math.imul(l.wi + 1, 2654435761)) + Math.floor(this.rand() * 1e6));
-    const p = this.wordParams(l.ws), E = []; let k0 = 0; const nid = () => l.id * 100 + (k0++);
-    const w = this.mw(l.ch), inX = () => (r() - 0.5) * w * 0.7; p.w = w;
-    const nUp = 1 + (r() < 0.45 * p.dens ? 1 : 0);
-    for (let i = 0; i < nUp; i++) {
-      this.grow(r, E, nid, p, { base: [inX(), -r() * 0.3], dir: -Math.PI / 2 + p.lean * 0.5 + (r() - 0.5) * 0.7, len: 0.6 + r() * 0.5, d0: 40 + i * 130, tip: l.wi === 0 && i === 0 ? 'rose' : null });
-    }
-    if (r() < 0.4 * p.dens) this.grow(r, E, nid, p, { base: [inX(), -0.1 - r() * 0.35], dir: Math.PI / 2 + (r() - 0.5) * 0.8, len: 0.35 + r() * 0.35, d0: 160 });
-    if (l.prev && r() < p.bridgeP) {
-      const px = -(this.mw(l.prev.ch) + w) / 2;
-      const a = [inX(), -0.05 - r() * 0.55], b = [px + (r() - 0.5) * 0.25, -0.05 - r() * 0.55];
-      const bulge = (r() < 0.55 ? -1 : 1) * (0.4 + r() * 0.4), dx = b[0] - a[0];
-      let P = this.bez(a, [a[0] + dx * 0.15, a[1] + bulge], [b[0] - dx * 0.15, b[1] + bulge * 0.9], b, 40);
-      if (r() < 0.45) P = P.slice(0, Math.floor(P.length * (0.7 + r() * 0.2)));
-      this.grow(r, E, nid, p, { pts: P, len: Math.abs(dx) + Math.abs(bulge), d0: 90, tip: r() < 0.5 ? 'curl' : r() < 0.5 ? 'leaf' : 'rose' });
-    }
-    if (l.wi === 0) this.grow(r, E, nid, p, { base: [-w * 0.3, -0.15 - r() * 0.4], dir: Math.PI + (r() - 0.5) * 1.2, len: 0.45 + r() * 0.3, d0: 120, tip: 'curl' });
-    l.els = E;
-    l.endEls = null;
-    const T = [], tr = this.rng(l.id * 977 + Math.floor(this.rand() * 1e6));
-    this.grow(tr, T, () => l.id * 100 + 90 + T.length, p, { base: [w * 0.25, -0.1 - tr() * 0.45], dir: (tr() - 0.5) * 1.4, len: 0.45 + tr() * 0.25, d0: 0, tip: 'curl', depth: 1 });
-    l.tend = T.filter(e => e.t === 'stem').slice(0, 1);
+
+  glyphShape(ch) {
+    const key=this.F+'|'+ch;
+    this.shapeCache ||= new Map(); if(this.shapeCache.has(key))return this.shapeCache.get(key);
+    const c=document.createElement('canvas'),g=c.getContext('2d',{willReadFrequently:true}),U=240;
+    g.font=`700 ${U}px ${this.F}`;g.textAlign='center';g.textBaseline='alphabetic';
+    const m=g.measureText(ch),left=m.actualBoundingBoxLeft??m.width/2,right=m.actualBoundingBoxRight??m.width/2;
+    const asc=m.actualBoundingBoxAscent??U*.72,desc=m.actualBoundingBoxDescent??0;
+    const pad=8,ox=Math.ceil(left)+pad,oy=Math.ceil(asc)+pad;
+    c.width=Math.max(1,Math.ceil(left+right)+pad*2);c.height=Math.max(1,Math.ceil(asc+desc)+pad*2);
+    g.font=`700 ${U}px ${this.F}`;g.textAlign='center';g.textBaseline='alphabetic';g.fillStyle='#fff';g.fillText(ch,ox,oy);
+    const data=g.getImageData(0,0,c.width,c.height).data,points=[];
+    for(let y=0;y<c.height;y+=2)for(let x=0;x<c.width;x+=2)if(data[(y*c.width+x)*4+3]>160)points.push([(x-ox)/U,(y-oy)/U]);
+    const result={points,height:Math.max(.1,(asc+desc)/U),width:Math.max(.05,(left+right)/U),top:-asc/U,bottom:desc/U};
+    this.shapeCache.set(key,result);return result;
   }
-  genEnd(l, rel) {
-    const r = this.rng(l.ws + l.wi * 31 + Math.floor(this.rand() * 1e6)), p = this.wordParams(l.ws), E = [];
-    let k0 = 50; const nid = () => l.id * 100 + (k0++);
-    const w = this.mw(l.ch), n = 1 + Math.floor(r() * 2.5); p.w = w;
-    for (let i = 0; i < n; i++) {
-      const dir = -Math.PI / 2 + 0.6 + (i - (n - 1) / 2) * 0.9 + (r() - 0.5) * 0.4;
-      this.grow(r, E, nid, p, { base: [(r() - 0.2) * w * 0.6, -r() * 0.5], dir, len: 0.4 + r() * 0.45, d0: rel + 40 + i * 90, depth: 1, tip: i === 0 || r() < 0.5 ? 'rose' : 'fan' });
+  glyphGrow(l,r,E,nid,p,o) {
+    const shape=this.glyphShape(l.ch);if(!shape.points.length)return;
+    const desired=o.base||[0,-shape.height*.35];
+    // Snap every root to an opaque pixel of this exact glyph, in the same
+    // centered baseline coordinates used by canvas text rendering.
+    let root=shape.points[0],best=Infinity;
+    for(const q of shape.points){const d=(q[0]-desired[0])**2+(q[1]-desired[1])**2;if(d<best){best=d;root=q}}
+    const scale=Math.max(.20,Math.min(1.65,shape.height/.72))*Math.max(.60,Math.min(1,Math.sqrt(shape.width/shape.height)));
+    const group=[];this.grow(r,group,nid,p,{...o,base:[0,0]});
+    for(const e of group){
+      if(e.t==='stem'){e.pts=e.pts.map(q=>[root[0]+q[0]*scale,root[1]+q[1]*scale]);e.w=(e.w||1)*scale}
+      else {e.x=root[0]+e.x*scale;e.y=root[1]+e.y*scale;if(e.R)e.R*=scale;if(e.L)e.L*=scale}
+      E.push(e);
     }
-    l.endEls = E;
+  }
+  gen(l) {
+    const r=this.rng((l.ws^Math.imul(l.wi+1,2654435761))+Math.floor(this.rand()*1e6));
+    const p=this.wordParams(l.ws),shape=this.glyphShape(l.ch),E=[];let k=0;const nid=()=>l.id*100+k++;
+    p.w=this.mw(l.ch);
+    const root=()=>[(r()-.5)*shape.width*.8,shape.top+shape.height*(.25+r()*.55)];
+    const n=1+(r()<.45*p.dens?1:0);
+    for(let i=0;i<n;i++)this.glyphGrow(l,r,E,nid,p,{base:root(),dir:-Math.PI/2+p.lean*.5+(r()-.5)*.7,len:.6+r()*.5,d0:40+i*130,tip:i===0?'rose':null});
+    if(r()<.4*p.dens)this.glyphGrow(l,r,E,nid,p,{base:root(),dir:Math.PI/2+(r()-.5)*.8,len:.35+r()*.35,d0:160});
+    if(l.wi===0)this.glyphGrow(l,r,E,nid,p,{base:root(),dir:Math.PI+(r()-.5),len:.45+r()*.3,d0:120,tip:'curl'});
+    l.els=E;l.endEls=null;
+    const T=[];this.glyphGrow(l,r,T,nid,p,{base:root(),dir:(r()-.5)*1.4,len:.45+r()*.25,d0:0,tip:'curl',depth:1});
+    l.tend=T.filter(e=>e.t==='stem').slice(0,1);
+  }
+  genEnd(l,rel) {
+    const r=this.rng(l.ws+l.wi*31+Math.floor(this.rand()*1e6)),p=this.wordParams(l.ws),shape=this.glyphShape(l.ch),E=[];let k=50;
+    for(let i=0,n=1+Math.floor(r()*2.5);i<n;i++)this.glyphGrow(l,r,E,()=>l.id*100+k++,p,{base:[(r()-.5)*shape.width*.8,shape.top+shape.height*(.25+r()*.55)],dir:-Math.PI/2+.6+(i-(n-1)/2)*.9,len:.4+r()*.45,d0:rel+40+i*90,depth:1,tip:i===0?'rose':'fan'});
+    l.endEls=E;
   }
 
   strokeRange(B, P, a, b, col, w) {
@@ -1116,7 +1131,7 @@ let fontRequest=0,activeFont='Playfair Display',customFont=null;
 const loadedFamilies=new Set();
 function waitFont(p){let timer;return Promise.race([p,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('No se pudo cargar la fuente. Revisa tu conexión.')),20000)})]).finally(()=>clearTimeout(timer))}
 function applyFont(family,svgStyle=''){
- app.F=family;app.fontSVGStyle=svgStyle;app.cache={};app._gl=null;
+ app.F=family;app.fontSVGStyle=svgStyle;app.cache={};app.shapeCache=new Map();app._gl=null;
  $('#words').style.fontFamily=family;
  // Preserve the live text while rebuilding stems for the new letter widths.
  const text=app.letters.filter(l=>!l.dead).map(l=>l.ch).join('');
