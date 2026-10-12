@@ -2,7 +2,7 @@
 *{box-sizing:border-box}body{margin:0;background:#090909;color:#eee;font:12px 'DM Mono',monospace}button,input,select{font:inherit}button,select{color:#eee;background:#171717;border:1px solid #383838;border-radius:20px;padding:10px 15px;cursor:pointer}button:hover,button[aria-pressed=true]{background:#eee;color:#111}header{height:74px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid #252525}header strong{font:700 25px 'Playfair Display',serif}header span{color:#777;margin-left:12px}main{display:grid;grid-template-columns:260px 1fr;height:calc(100dvh - 74px)}aside{padding:24px 20px;border-right:1px solid #252525;overflow:auto;display:flex;flex-direction:column;gap:22px}label{display:block;color:#aaa;line-height:1.6}input[type=text]{width:100%;background:#111;color:white;border:1px solid #383838;border-radius:8px;padding:12px;margin-top:8px}input[type=range]{width:100%;accent-color:#ff5543}section{position:relative;min-width:0;overflow:hidden}canvas#cv{width:100%;height:100%;display:block}#pcv{position:absolute;width:min(100%,calc(100dvh - 120px));height:auto;max-height:100%;aspect-ratio:1;left:50%;top:50%;transform:translate(-50%,-50%)}.hidden{display:none!important}.row{display:flex;flex-wrap:wrap;gap:6px}.sw{width:27px;height:27px;padding:0;border:2px solid #555}#status{color:#a1a1a1;line-height:1.7;min-height:38px}small{color:#777;line-height:1.7}#hint{position:absolute;bottom:20px;left:20px;right:20px;pointer-events:none;color:#888;line-height:1.7}#inp{position:fixed;opacity:0;width:1px;height:1px;pointer-events:none}input[type=checkbox]{accent-color:#ff5543}footer{margin-top:auto;color:#666;font-size:10px;line-height:1.7}a{color:inherit}@media(max-width:700px){header{padding:12px;height:auto;gap:12px;flex-wrap:wrap}header span{display:none}main{display:flex;flex-direction:column;height:auto}section{height:65dvh;order:-1}aside{border-right:0;border-top:1px solid #252525}#pcv{width:auto;height:100%;max-width:100%}}</style>
 <header><div><strong>Jardín.</strong><span>Letras e imágenes en flor</span></div><nav class="row"><button data-mode="type">Escribir</button><button data-mode="poster">Póster</button><button data-mode="png">Imagen PNG</button></nav></header><main><aside>
 <div id="textControls"><label>Tu texto<input id="words" type="text" value="Jesús vive" maxlength="40"></label></div>
-<div id="imageControls" class="hidden"><button id="upload">＋ Subir PNG</button><input id="file" type="file" accept="image/png" hidden><p><small>Con transparencia, las flores nacen del contorno. Una imagen sin transparencia florece desde sus bordes.</small></p><label>Tamaño de la imagen<input id="scale" type="range" min="25" max="75" value="55"></label><label>Resolución al guardar PNG<select id="pngResolution" style="width:100%;margin:8px 0"><option value="2160">2160 × 2160</option><option value="4096">4096 × 4096</option><option value="original">Conservar resolución del original (máx. 8192)</option></select></label><label><input id="front" type="checkbox"> Flores siempre al frente</label></div>
+<div id="fontControls"><label>Tipografía<select id="fontSelect" style="width:100%;margin-top:8px"><option value="Playfair Display">Playfair Display</option><option value="Cormorant Garamond">Cormorant Garamond</option><option value="Bodoni Moda">Bodoni Moda</option><option value="Libre Baskerville">Libre Baskerville</option><option value="DM Serif Display">DM Serif Display</option><option value="Montserrat">Montserrat</option><option value="DM Sans">DM Sans</option><option value="Space Grotesk">Space Grotesk</option><option value="system">Georgia · sin conexión</option></select></label><button id="uploadFont" style="margin-top:12px">＋ Subir tipografía</button><input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" hidden><p><small>Google Fonts se carga con internet. También puedes usar un archivo TTF, OTF, WOFF o WOFF2. La fuente propia se usa en esta sesión.</small></p><div id="fontStatus" role="status" style="color:#aaa;line-height:1.6"></div></div><div id="imageControls" class="hidden"><button id="upload">＋ Subir PNG</button><input id="file" type="file" accept="image/png" hidden><p><small>Con transparencia, las flores nacen del contorno. Una imagen sin transparencia florece desde sus bordes.</small></p><label>Tamaño de la imagen<input id="scale" type="range" min="25" max="75" value="55"></label><label>Resolución al guardar PNG<select id="pngResolution" style="width:100%;margin:8px 0"><option value="2160">2160 × 2160</option><option value="4096">4096 × 4096</option><option value="original">Conservar resolución del original (máx. 8192)</option></select></label><label><input id="front" type="checkbox"> Flores siempre al frente</label></div>
 <div><label>Densidad<input id="density" type="range" min="0.5" max="1.6" step="0.1" value="1"></label><label id="sizeLabel" class="hidden">Tamaño de las flores<input id="flowerSize" type="range" min="35" max="120" value="70"></label></div>
 <div><label>Paleta</label><div class="row" id="palettes" style="margin-top:10px"></div></div>
 <label id="motionLabel">Movimiento<select id="motion" style="width:100%;margin-top:8px"></select></label>
@@ -1015,11 +1015,11 @@ class Component  {
       text: (ch, x, y, S, col) => {
         const d = this.glyphPath(ch, x, y, S);
         if (d) parts.push(`<path id="${lid(ch)}" d="${d}" fill="${col}"/>`);
-        else parts.push(`<text x="${n(x)}" y="${n(y)}" text-anchor="middle" font-family="GT Ultra, Playfair Display, serif" font-weight="700" font-size="${n(S)}" fill="${col}">${esc(ch)}</text>`);
+        else parts.push(`<text x="${n(x)}" y="${n(y)}" text-anchor="middle" font-family="${esc(this.F)}" font-weight="700" font-size="${n(S)}" fill="${col}">${esc(ch)}</text>`);
       }
     };
     this.render(B, performance.now(), this.mainState());
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${n(this.W)}" height="${n(this.H)}" viewBox="0 0 ${n(this.W)} ${n(this.H)}"><rect width="100%" height="100%" fill="${this.pal().bg}"/>${parts.join('')}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${n(this.W)}" height="${n(this.H)}" viewBox="0 0 ${n(this.W)} ${n(this.H)}"><rect width="100%" height="100%" fill="${this.pal().bg}"/>${this.fontSVGStyle||''}${parts.join('')}</svg>`;
     this.dl(new Blob([svg], { type: 'image/svg+xml' }), 'garden.svg');
   }
   fname() { return 'garden-' + (this.state.text || 'loop').trim().replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 24) + '-' + this.state.preset; }
@@ -1089,7 +1089,7 @@ app.setState=function(p,cb){Object.assign(this.state,p);sync();if(cb)cb()};app.f
 const key=app.key.bind(app);app.key=e=>{if(e.target.closest('aside')||e.target.closest('nav'))return;key(e)};
 const move=app.near.bind(app);app.near=(x,y)=>{const r=$('#cv').getBoundingClientRect();return app.mx==null?null:[app.mx-r.left,app.my-r.top]};
 let png=null,mask=null,plants=[],pngStart=0,pngSeed=77,mode='type';
-function sync(){mode=app.state.mode;document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));$('#cv').classList.toggle('hidden',mode==='poster');$('#pcv').classList.toggle('hidden',mode!=='poster');$('#imageControls').classList.toggle('hidden',mode!=='png');$('#sizeLabel').classList.toggle('hidden',mode!=='png');$('#textControls').classList.toggle('hidden',mode==='png');$('#hint').classList.toggle('hidden',mode!=='type');$('#playbackControls').classList.toggle('hidden',mode==='type');$('#motionLabel').classList.toggle('hidden',mode==='type');[...$('#motion').options].forEach(o=>o.disabled=mode==='png'&&!['breathe','grow','scatter','typed'].includes(o.value));if(mode==='png'&&!['breathe','grow','scatter','typed'].includes(app.state.preset)){app.state.preset='grow';$('#motion').value='grow'}$('#exports').classList.toggle('hidden',mode==='type');$('#svg').classList.toggle('hidden',mode!=='type');$('#status').textContent=app.state.status||'';document.querySelectorAll('#exports button').forEach(b=>b.disabled=app.state.busy);}
+function sync(){mode=app.state.mode;document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));$('#cv').classList.toggle('hidden',mode==='poster');$('#pcv').classList.toggle('hidden',mode!=='poster');$('#imageControls').classList.toggle('hidden',mode!=='png');$('#sizeLabel').classList.toggle('hidden',mode!=='png');$('#textControls').classList.toggle('hidden',mode==='png');$('#fontControls').classList.toggle('hidden',mode==='png');$('#hint').classList.toggle('hidden',mode!=='type');$('#playbackControls').classList.toggle('hidden',mode==='type');$('#motionLabel').classList.toggle('hidden',mode==='type');[...$('#motion').options].forEach(o=>o.disabled=mode==='png'&&!['breathe','grow','scatter','typed'].includes(o.value));if(mode==='png'&&!['breathe','grow','scatter','typed'].includes(app.state.preset)){app.state.preset='grow';$('#motion').value='grow'}$('#exports').classList.toggle('hidden',mode==='type');$('#svg').classList.toggle('hidden',mode!=='type');$('#status').textContent=app.state.status||'';document.querySelectorAll('#exports button').forEach(b=>b.disabled=app.state.busy);}
 app.PAL.forEach((p,i)=>{let b=document.createElement('button');b.className='sw';b.title=p[0];b.setAttribute('aria-label',p[0]);b.style.background=`radial-gradient(circle,${p[2]} 35%,${p[1]} 40%)`;b.onclick=()=>app.setState({palette:i});$('#palettes').append(b)});
 app.PRESETS.forEach(p=>{let o=document.createElement('option');o.value=p.id;o.textContent=p.label;$('#motion').append(o)});
 function seedPNG(){plants=[];pngStart=performance.now();if(!mask)return;let r=app.rng(pngSeed),n=Math.round(42*app.props.density),chosen=[];for(let i=0;i<n;i++){let q;for(let k=0;k<30;k++){q=mask.edges[Math.floor(r()*mask.edges.length)];if(chosen.every(v=>Math.hypot(v.x-q.x,v.y-q.y)>12))break}if(!q)continue;chosen.push(q);let l={ch:'',id:20000+i,els:[],birth:i*18,x:0,y:0,anchor:q};let id=0,p=app.wordParams(i+pngSeed);p.roseP=.8;app.grow(r,l.els,()=>l.id*100+id++,p,{base:[0,0],dir:q.angle+(r()-.5)*.65,len:.5+r()*.7,d0:0,tip:r()<.8?'rose':'fan'});plants.push(l)}}
@@ -1111,5 +1111,62 @@ $('#cv').onclick=()=>{if(mode==='type')app.inp.current.focus({preventScroll:true
 $('#save').onclick=()=>{let c=document.createElement('canvas'),g=c.getContext('2d'),tr=$('#transparent').checked;if(mode==='poster'){c.width=c.height=1080;app.exportTransparent=tr;app.posterDraw(g,performance.now()-app.pt0);app.exportTransparent=false}else if(mode==='png'){const side=pngExportSize();c.width=c.height=side;pngDraw(g,performance.now()-pngStart,side,side,tr)}else{c.width=app.cv.current.width;c.height=app.cv.current.height;g.setTransform(app.dpr,0,0,app.dpr,0,0);if(!tr){g.fillStyle=app.pal().bg;g.fillRect(0,0,app.W,app.H)}app.render(app.backend(g),performance.now(),app.mainState())}c.toBlob(b=>b&&app.dl(b,'jardin.png'))};
 $('#playback').onchange=$('#duration').oninput=()=>{$('#durationValue').value=$('#duration').value;app.pt0=pngStart=performance.now()};$('#replay').onclick=()=>{app.pt0=pngStart=performance.now()};
 $('#svg').onclick=()=>app.saveSVG();$('#video').onclick=()=>{app.exportVideo()};$('#frames').onclick=()=>{app.exportFrames()};
+
+let fontRequest=0,activeFont='Playfair Display',customFont=null;
+const loadedFamilies=new Set();
+function waitFont(p){let timer;return Promise.race([p,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('No se pudo cargar la fuente. Revisa tu conexión.')),20000)})]).finally(()=>clearTimeout(timer))}
+function applyFont(family,svgStyle=''){
+ app.F=family;app.fontSVGStyle=svgStyle;app.cache={};app._gl=null;
+ $('#words').style.fontFamily=family;
+ // Preserve the live text while rebuilding stems for the new letter widths.
+ const text=app.letters.filter(l=>!l.dead).map(l=>l.ch).join('');
+ app.letters=[];app.layout(true);
+ const now=performance.now();[...text].forEach((ch,i)=>app.add(ch,now+i*25));
+ app.layout(true);app.buildPoster();
+}
+async function selectFont(){
+ const token=++fontRequest,selected=$('#fontSelect').value;
+ $('#fontStatus').textContent='Cargando tipografía…';
+ try{
+  let family,svgStyle='';
+  if(selected==='system')family='Georgia,serif';
+  else if(selected==='custom'&&customFont){family='"'+customFont.family+'"';svgStyle=customFont.svgStyle}
+  else{
+   if(!loadedFamilies.has(selected)){
+    const link=document.createElement('link');link.rel='stylesheet';
+    link.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(selected).replace(/%20/g,'+')+':wght@'+(selected==='DM Serif Display'?'400':'700')+'&display=swap';
+    await waitFont(new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=()=>reject(Error('No se pudo conectar con Google Fonts. Puedes subir un archivo o elegir Georgia.'));document.head.append(link)}));
+    const faces=await waitFont(document.fonts.load('700 100px "'+selected+'"'));
+    if(!faces.length)throw Error('La fuente no está disponible. Intenta otra o sube un archivo.');
+    loadedFamilies.add(selected);
+   }
+   family='"'+selected+'",Georgia,serif';
+  }
+  if(token!==fontRequest)return;
+  applyFont(family,svgStyle);activeFont=selected;
+  $('#fontStatus').textContent=selected==='custom'?customFont.name+' · lista':selected==='system'?'Georgia · lista':selected+' · lista';
+ }catch(e){if(token!==fontRequest)return;$('#fontSelect').value=activeFont;$('#fontStatus').textContent=e.message}
+}
+$('#fontSelect').onchange=selectFont;
+$('#uploadFont').onclick=()=>$('#fontFile').click();
+$('#fontFile').onchange=async e=>{
+ const file=e.target.files[0];if(!file)return;const token=++fontRequest;
+ $('#fontStatus').textContent='Cargando archivo…';
+ try{
+  if(!/\.(ttf|otf|woff2?)$/i.test(file.name))throw Error('Selecciona un archivo TTF, OTF, WOFF o WOFF2.');
+  if(file.size>20*1024*1024)throw Error('El archivo debe pesar menos de 20 MB.');
+  const buffer=await file.arrayBuffer(),family='GardenCustom'+token;
+  const face=new FontFace(family,buffer,{weight:'700'});await face.load();
+  if(token!==fontRequest)return;
+  document.fonts.add(face);
+  const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('No se pudo leer la fuente.'));reader.readAsDataURL(file)});
+  if(token!==fontRequest){document.fonts.delete(face);return}
+  if(customFont)document.fonts.delete(customFont.face);
+  customFont={family,name:file.name,face,svgStyle:'<style>@font-face{font-family:'+family+';src:url('+data+');font-weight:700}</style>'};
+  let option=$('#fontSelect option[value="custom"]');if(!option){option=document.createElement('option');option.value='custom';$('#fontSelect').append(option)}option.textContent=file.name;$('#fontSelect').value='custom';
+  applyFont('"'+family+'"',customFont.svgStyle);activeFont='custom';$('#fontStatus').textContent=file.name+' · lista';
+ }catch(e){if(token===fontRequest)$('#fontStatus').textContent='No se pudo cargar: '+e.message}
+ finally{$('#fontFile').value=''}
+};
 app.componentDidMount();textReset();sync();window.garden=app;
 </script></html>
